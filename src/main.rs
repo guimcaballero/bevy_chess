@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_mod_picking::*;
 
 mod pieces;
 use pieces::*;
@@ -15,6 +16,8 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        .add_plugin(PickingPlugin)
+        .add_plugin(DebugPickingPlugin)
         .add_startup_system(setup.system())
         .add_startup_system(create_board.system())
         .add_startup_system(create_pieces.system())
@@ -31,6 +34,7 @@ fn setup(mut commands: Commands) {
             )),
             ..Default::default()
         })
+        .with(PickSource::default())
         // Light
         .spawn(LightComponents {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
@@ -51,17 +55,19 @@ fn create_board(
     // Spawn 64 squares
     for i in 0..8 {
         for j in 0..8 {
-            commands.spawn(PbrComponents {
-                mesh: mesh.clone(),
-                // Change material according to position to get alternating pattern
-                material: if (i + j + 1) % 2 == 0 {
-                    white_material.clone()
-                } else {
-                    black_material.clone()
-                },
-                transform: Transform::from_translation(Vec3::new(i as f32, 0., j as f32)),
-                ..Default::default()
-            });
+            commands
+                .spawn(PbrComponents {
+                    mesh: mesh.clone(),
+                    // Change material according to position to get alternating pattern
+                    material: if (i + j + 1) % 2 == 0 {
+                        white_material.clone()
+                    } else {
+                        black_material.clone()
+                    },
+                    transform: Transform::from_translation(Vec3::new(i as f32, 0., j as f32)),
+                    ..Default::default()
+                })
+                .with(PickableMesh::default());
         }
     }
 }

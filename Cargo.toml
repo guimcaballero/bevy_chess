@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 bevy = "0.3"
+bevy_mod_picking = "0.2.0"
