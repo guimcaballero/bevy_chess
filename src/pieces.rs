@@ -1,11 +1,13 @@
 use bevy::prelude::*;
 
-enum PieceColor {
+#[derive(Clone, Copy)]
+pub enum PieceColor {
     White,
     Black,
 }
 
-enum PieceType {
+#[derive(Clone, Copy)]
+pub enum PieceType {
     King,
     Queen,
     Bishop,
@@ -14,15 +16,28 @@ enum PieceType {
     Pawn,
 }
 
-struct Piece {
-    color: PieceColor,
-    piece_type: PieceType,
+#[derive(Clone, Copy)]
+pub struct Piece {
+    pub color: PieceColor,
+    pub piece_type: PieceType,
     // Current position
-    x: u8,
-    y: u8,
+    pub x: u8,
+    pub y: u8,
 }
 
-pub fn create_pieces(
+fn move_pieces(time: Res<Time>, mut query: Query<(&mut Transform, &Piece)>) {
+    for (mut transform, piece) in query.iter_mut() {
+        // Get the direction to move in
+        let direction = Vec3::new(piece.x as f32, 0., piece.y as f32) - transform.translation;
+
+        // Only move if the piece isn't already there (distance is big)
+        if direction.length() > 0.1 {
+            transform.translation += direction.normalize() * time.delta_seconds;
+        }
+    }
+}
+
+fn create_pieces(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -434,4 +449,12 @@ fn spawn_pawn(
                 ..Default::default()
             });
         });
+}
+
+pub struct PiecesPlugin;
+impl Plugin for PiecesPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_startup_system(create_pieces.system())
+            .add_system(move_pieces.system());
+    }
 }
