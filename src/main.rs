@@ -5,6 +5,8 @@ mod pieces;
 use pieces::*;
 mod board;
 use board::*;
+mod ui;
+use ui::*;
 
 fn main() {
     App::build()
@@ -21,6 +23,7 @@ fn main() {
         .add_plugin(PickingPlugin)
         .add_plugin(BoardPlugin)
         .add_plugin(PiecesPlugin)
+        .add_plugin(UIPlugin)
         .add_startup_system(setup.system())
         .run();
 }
