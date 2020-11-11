@@ -1,5 +1,5 @@
 use crate::pieces::*;
-use bevy::prelude::*;
+use bevy::{app::AppExit, prelude::*};
 use bevy_mod_picking::*;
 
 pub struct Square {
@@ -93,6 +93,7 @@ fn select_square(
     mut selected_square: ResMut<SelectedSquare>,
     mut selected_piece: ResMut<SelectedPiece>,
     mut turn: ResMut<PlayerTurn>,
+    mut app_exit_events: ResMut<Events<AppExit>>,
     squares_query: Query<&Square>,
     mut pieces_query: Query<(Entity, &mut Piece, &Children)>,
 ) {
@@ -135,6 +136,18 @@ fn select_square(
                                 && other_piece.y == square.y
                                 && other_piece.color != piece.color
                             {
+                                // If the king is taken, we should exit
+                                if other_piece.piece_type == PieceType::King {
+                                    println!(
+                                        "{} won! Thanks for playing!",
+                                        match turn.0 {
+                                            PieceColor::White => "White",
+                                            PieceColor::Black => "Black",
+                                        }
+                                    );
+                                    app_exit_events.send(AppExit);
+                                }
+
                                 // Despawn piece
                                 commands.despawn(other_entity);
                                 // Despawn all of it's children
