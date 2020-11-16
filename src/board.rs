@@ -215,9 +215,9 @@ struct Taken;
 fn despawn_taken_pieces(
     mut commands: Commands,
     mut app_exit_events: ResMut<Events<AppExit>>,
-    query: Query<(Entity, &Piece, &Children, &Taken)>,
+    query: Query<(Entity, &Piece, &Taken)>,
 ) {
-    for (entity, piece, children, _taken) in query.iter() {
+    for (entity, piece, _taken) in query.iter() {
         // If the king is taken, we should exit
         if piece.piece_type == PieceType::King {
             println!(
@@ -230,12 +230,8 @@ fn despawn_taken_pieces(
             app_exit_events.send(AppExit);
         }
 
-        // Despawn piece
-        commands.despawn(entity);
-        // Despawn all of it's children
-        for child in children.iter() {
-            commands.despawn(*child);
-        }
+        // Despawn piece and children
+        commands.despawn_recursive(entity);
     }
 }
 
