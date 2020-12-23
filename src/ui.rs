@@ -6,7 +6,7 @@ struct NextMoveText;
 
 /// Initialize UiCamera and text
 fn init_next_move_text(
-    mut commands: Commands,
+    commands: &mut Commands,
     asset_server: ResMut<AssetServer>,
     mut color_materials: ResMut<Assets<ColorMaterial>>,
 ) {
@@ -14,9 +14,9 @@ fn init_next_move_text(
     let material = color_materials.add(Color::NONE.into());
 
     commands
-        .spawn(UiCameraComponents::default())
+        .spawn(CameraUiBundle::default())
         // root node
-        .spawn(NodeComponents {
+        .spawn(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
                 position: Rect {
@@ -31,13 +31,14 @@ fn init_next_move_text(
         })
         .with_children(|parent| {
             parent
-                .spawn(TextComponents {
+                .spawn(TextBundle {
                     text: Text {
                         value: "Next move: White".to_string(),
                         font,
                         style: TextStyle {
                             font_size: 40.0,
                             color: Color::rgb(0.8, 0.8, 0.8),
+                            ..Default::default()
                         },
                     },
                     ..Default::default()
@@ -63,7 +64,7 @@ fn next_move_text_update(
 }
 
 /// Demo system to show off Query transformers
-fn log_text_changes(query: Query<Mutated<Text>>) {
+fn log_text_changes(query: Query<&Text, Mutated<Text>>) {
     for text in query.iter() {
         println!("New text: {}", text.value);
     }

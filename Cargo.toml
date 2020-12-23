@@ -1,11 +1,11 @@
 [package]
 name = "bevy_chess"
 version = "0.1.0"
-authors = ["guimcaballero <guim.caballero@gmail.com>"]
+authors = ["guimcaballero <guim@caballerocoll.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.3"
-bevy_mod_picking = "0.2.0"
+bevy = "0.4"
+bevy_mod_picking = "0.3.1"

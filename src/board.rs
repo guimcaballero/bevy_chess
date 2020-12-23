@@ -13,7 +13,7 @@ impl Square {
 }
 
 fn create_board(
-    mut commands: Commands,
+    commands: &mut Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
@@ -24,7 +24,7 @@ fn create_board(
     for i in 0..8 {
         for j in 0..8 {
             commands
-                .spawn(PbrComponents {
+                .spawn(PbrBundle {
                     mesh: mesh.clone(),
                     // Change material according to position to get alternating pattern
                     material: if (i + j + 1) % 2 == 0 {
@@ -152,13 +152,13 @@ fn select_piece(
 }
 
 fn move_piece(
-    mut commands: Commands,
+    commands: &mut Commands,
     selected_square: ChangedRes<SelectedSquare>,
-    mut selected_square_mut: ResMut<SelectedSquare>,
     mut selected_piece: ResMut<SelectedPiece>,
     mut turn: ResMut<PlayerTurn>,
     squares_query: Query<&Square>,
     mut pieces_query: Query<(Entity, &mut Piece)>,
+    mut reset_selected_square_event: ResMut<Events<ResetSelectedSquareEvent>>,
 ) {
     let square_entity = if let Some(entity) = selected_square.entity {
         entity
@@ -206,14 +206,26 @@ fn move_piece(
             turn.change();
         }
 
-        selected_square_mut.entity = None;
         selected_piece.entity = None;
+        reset_selected_square_event.send(ResetSelectedSquareEvent);
+    }
+}
+
+struct ResetSelectedSquareEvent;
+
+fn reset_selected_square(
+    mut event_reader: Local<EventReader<ResetSelectedSquareEvent>>,
+    events: Res<Events<ResetSelectedSquareEvent>>,
+    mut selected_square: ResMut<SelectedSquare>,
+) {
+    for _event in event_reader.iter(&events) {
+        selected_square.entity = None;
     }
 }
 
 struct Taken;
 fn despawn_taken_pieces(
-    mut commands: Commands,
+    commands: &mut Commands,
     mut app_exit_events: ResMut<Events<AppExit>>,
     query: Query<(Entity, &Piece, &Taken)>,
 ) {
@@ -241,11 +253,13 @@ impl Plugin for BoardPlugin {
         app.init_resource::<SelectedSquare>()
             .init_resource::<SelectedPiece>()
             .init_resource::<PlayerTurn>()
+            .add_event::<ResetSelectedSquareEvent>()
             .add_startup_system(create_board.system())
             .add_system(color_squares.system())
             .add_system(select_square.system())
             .add_system(move_piece.system())
             .add_system(select_piece.system())
-            .add_system(despawn_taken_pieces.system());
+            .add_system(despawn_taken_pieces.system())
+            .add_system(reset_selected_square.system());
     }
 }

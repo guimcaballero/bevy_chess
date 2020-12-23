@@ -15,8 +15,8 @@ fn main() {
         // Set WindowDescriptor Resource to change title and size
         .add_resource(WindowDescriptor {
             title: "Chess!".to_string(),
-            width: 1600,
-            height: 1600,
+            width: 1600.,
+            height: 1600.,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
@@ -28,10 +28,10 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands) {
+fn setup(commands: &mut Commands) {
     commands
         // Camera
-        .spawn(Camera3dComponents {
+        .spawn(Camera3dBundle {
             transform: Transform::from_matrix(Mat4::from_rotation_translation(
                 Quat::from_xyzw(-0.3, -0.5, -0.3, 0.5).normalize(),
                 Vec3::new(-7.0, 20.0, 4.0),
@@ -40,7 +40,7 @@ fn setup(mut commands: Commands) {
         })
         .with(PickSource::default())
         // Light
-        .spawn(LightComponents {
+        .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
             ..Default::default()
         });
