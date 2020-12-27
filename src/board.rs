@@ -15,7 +15,7 @@ impl Square {
 fn create_board(
     commands: &mut Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    materials: Res<SquareMaterials>,
 ) {
     // Add meshes
     let mesh = meshes.add(Mesh::from(shape::Plane { size: 1. }));
@@ -28,9 +28,9 @@ fn create_board(
                     mesh: mesh.clone(),
                     // Change material according to position to get alternating pattern
                     material: if (i + j + 1) % 2 == 0 {
-                        materials.add(Color::rgb(1., 0.9, 0.9).into())
+                        materials.white_color.clone()
                     } else {
-                        materials.add(Color::rgb(0., 0.1, 0.1).into())
+                        materials.black_color.clone()
                     },
                     transform: Transform::from_translation(Vec3::new(i as f32, 0., j as f32)),
                     ..Default::default()
@@ -44,8 +44,8 @@ fn create_board(
 fn color_squares(
     pick_state: Res<PickState>,
     selected_square: Res<SelectedSquare>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    query: Query<(Entity, &Square, &Handle<StandardMaterial>)>,
+    materials: Res<SquareMaterials>,
+    mut query: Query<(Entity, &Square, &mut Handle<StandardMaterial>)>,
 ) {
     // Get entity under the cursor, if there is one
     let top_entity = if let Some((entity, _intersection)) = pick_state.top(Group::default()) {
@@ -54,20 +54,36 @@ fn color_squares(
         None
     };
 
-    for (entity, square, material_handle) in query.iter() {
-        // Get the actual material
-        let material = materials.get_mut(material_handle).unwrap();
-
-        // Change the material color
-        material.albedo = if Some(entity) == top_entity {
-            Color::rgb(0.8, 0.3, 0.3)
+    for (entity, square, mut material) in query.iter_mut() {
+        // Change the material
+        *material = if Some(entity) == top_entity {
+            materials.highlight_color.clone()
         } else if Some(entity) == selected_square.entity {
-            Color::rgb(0.9, 0.1, 0.1)
+            materials.selected_color.clone()
         } else if square.is_white() {
-            Color::rgb(1., 0.9, 0.9)
+            materials.white_color.clone()
         } else {
-            Color::rgb(0., 0.1, 0.1)
+            materials.black_color.clone()
         };
+    }
+}
+
+struct SquareMaterials {
+    highlight_color: Handle<StandardMaterial>,
+    selected_color: Handle<StandardMaterial>,
+    black_color: Handle<StandardMaterial>,
+    white_color: Handle<StandardMaterial>,
+}
+
+impl FromResources for SquareMaterials {
+    fn from_resources(resources: &Resources) -> Self {
+        let mut materials = resources.get_mut::<Assets<StandardMaterial>>().unwrap();
+        SquareMaterials {
+            highlight_color: materials.add(Color::rgb(0.8, 0.3, 0.3).into()),
+            selected_color: materials.add(Color::rgb(0.9, 0.1, 0.1).into()),
+            black_color: materials.add(Color::rgb(0., 0.1, 0.1).into()),
+            white_color: materials.add(Color::rgb(1., 0.9, 0.9).into()),
+        }
     }
 }
 
@@ -252,6 +268,7 @@ impl Plugin for BoardPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<SelectedSquare>()
             .init_resource::<SelectedPiece>()
+            .init_resource::<SquareMaterials>()
             .init_resource::<PlayerTurn>()
             .add_event::<ResetSelectedSquareEvent>()
             .add_startup_system(create_board.system())
