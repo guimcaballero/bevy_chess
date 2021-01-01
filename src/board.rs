@@ -170,11 +170,11 @@ fn select_piece(
 fn move_piece(
     commands: &mut Commands,
     selected_square: ChangedRes<SelectedSquare>,
-    mut selected_piece: ResMut<SelectedPiece>,
+    selected_piece: Res<SelectedPiece>,
     mut turn: ResMut<PlayerTurn>,
     squares_query: Query<&Square>,
     mut pieces_query: Query<(Entity, &mut Piece)>,
-    mut reset_selected_square_event: ResMut<Events<ResetSelectedSquareEvent>>,
+    mut reset_selected_event: ResMut<Events<ResetSelectedEvent>>,
 ) {
     let square_entity = if let Some(entity) = selected_square.entity {
         entity
@@ -222,20 +222,21 @@ fn move_piece(
             turn.change();
         }
 
-        selected_piece.entity = None;
-        reset_selected_square_event.send(ResetSelectedSquareEvent);
+        reset_selected_event.send(ResetSelectedEvent);
     }
 }
 
-struct ResetSelectedSquareEvent;
+struct ResetSelectedEvent;
 
-fn reset_selected_square(
-    mut event_reader: Local<EventReader<ResetSelectedSquareEvent>>,
-    events: Res<Events<ResetSelectedSquareEvent>>,
+fn reset_selected(
+    mut event_reader: Local<EventReader<ResetSelectedEvent>>,
+    events: Res<Events<ResetSelectedEvent>>,
     mut selected_square: ResMut<SelectedSquare>,
+    mut selected_piece: ResMut<SelectedPiece>,
 ) {
     for _event in event_reader.iter(&events) {
         selected_square.entity = None;
+        selected_piece.entity = None;
     }
 }
 
@@ -270,13 +271,13 @@ impl Plugin for BoardPlugin {
             .init_resource::<SelectedPiece>()
             .init_resource::<SquareMaterials>()
             .init_resource::<PlayerTurn>()
-            .add_event::<ResetSelectedSquareEvent>()
+            .add_event::<ResetSelectedEvent>()
             .add_startup_system(create_board.system())
             .add_system(color_squares.system())
             .add_system(select_square.system())
             .add_system(move_piece.system())
             .add_system(select_piece.system())
             .add_system(despawn_taken_pieces.system())
-            .add_system(reset_selected_square.system());
+            .add_system(reset_selected.system());
     }
 }
