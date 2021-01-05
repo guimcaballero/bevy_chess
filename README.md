@@ -7,3 +7,7 @@ I'm currently writing an accompanying tutorial that I'll link here when I finish
 Here's a recording of the game:
 
 ![Chess](./chess.gif)
+
+## License
+
+Bevy Chess is published under a [MIT License](/LICENSE.md).
