@@ -48,14 +48,12 @@ fn color_squares(
     picking_camera_query: Query<&PickingCamera>,
 ) {
     // Get entity under the cursor, if there is one
-    let top_entity = if let Some(picking_camera) = picking_camera_query.iter().last() {
-        if let Some((entity, _intersection)) = picking_camera.intersect_top() {
-            Some(entity)
-        } else {
-            None
-        }
-    } else {
-        None
+    let top_entity = match picking_camera_query.iter().last() {
+        Some(picking_camera) => match picking_camera.intersect_top() {
+            Some((entity, _intersection)) => Some(entity),
+            None => None,
+        },
+        None => None,
     };
 
     for (entity, square, mut material) in query.iter_mut() {
@@ -151,7 +149,7 @@ fn select_piece(
     squares_query: Query<&Square>,
     pieces_query: Query<(Entity, &Piece)>,
 ) {
-    if selected_square.is_changed() {
+    if !selected_square.is_changed() {
         return;
     }
 
@@ -188,7 +186,7 @@ fn move_piece(
     mut pieces_query: Query<(Entity, &mut Piece)>,
     mut reset_selected_event: EventWriter<ResetSelectedEvent>,
 ) {
-    if selected_square.is_changed() {
+    if !selected_square.is_changed() {
         return;
     }
 
@@ -289,10 +287,21 @@ impl Plugin for BoardPlugin {
             .add_event::<ResetSelectedEvent>()
             .add_startup_system(create_board.system())
             .add_system(color_squares.system())
-            .add_system(select_square.system())
-            .add_system(move_piece.system())
-            .add_system(select_piece.system())
+            .add_system(select_square.system().label("select_square"))
+            .add_system(
+                // move_piece needs to run before select_piece
+                move_piece
+                    .system()
+                    .after("select_square")
+                    .before("select_piece"),
+            )
+            .add_system(
+                select_piece
+                    .system()
+                    .after("select_square")
+                    .label("select_piece"),
+            )
             .add_system(despawn_taken_pieces.system())
-            .add_system(reset_selected.system());
+            .add_system(reset_selected.system().after("select_square"));
     }
 }
