@@ -13,7 +13,7 @@ impl Square {
 }
 
 fn create_board(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     materials: Res<SquareMaterials>,
 ) {
@@ -24,7 +24,7 @@ fn create_board(
     for i in 0..8 {
         for j in 0..8 {
             commands
-                .spawn(PbrBundle {
+                .spawn_bundle(PbrBundle {
                     mesh: mesh.clone(),
                     // Change material according to position to get alternating pattern
                     material: if (i + j + 1) % 2 == 0 {
@@ -35,8 +35,8 @@ fn create_board(
                     transform: Transform::from_translation(Vec3::new(i as f32, 0., j as f32)),
                     ..Default::default()
                 })
-                .with(PickableMesh::default())
-                .with(Square { x: i, y: j });
+                .insert_bundle(PickableBundle::default())
+                .insert(Square { x: i, y: j });
         }
     }
 }
@@ -75,9 +75,12 @@ struct SquareMaterials {
     white_color: Handle<StandardMaterial>,
 }
 
-impl FromResources for SquareMaterials {
-    fn from_resources(resources: &Resources) -> Self {
-        let mut materials = resources.get_mut::<Assets<StandardMaterial>>().unwrap();
+impl FromWorld for SquareMaterials {
+    fn from_world(world: &mut World) -> Self {
+        let world = world.cell();
+        let mut materials = world
+            .get_resource_mut::<Assets<StandardMaterial>>()
+            .unwrap();
         SquareMaterials {
             highlight_color: materials.add(Color::rgb(0.8, 0.3, 0.3).into()),
             selected_color: materials.add(Color::rgb(0.9, 0.1, 0.1).into()),
@@ -137,12 +140,16 @@ fn select_square(
 }
 
 fn select_piece(
-    selected_square: ChangedRes<SelectedSquare>,
+    selected_square: Res<SelectedSquare>,
     mut selected_piece: ResMut<SelectedPiece>,
     turn: Res<PlayerTurn>,
     squares_query: Query<&Square>,
     pieces_query: Query<(Entity, &Piece)>,
 ) {
+    if selected_square.is_changed() {
+        return;
+    }
+
     let square_entity = if let Some(entity) = selected_square.entity {
         entity
     } else {
@@ -168,14 +175,18 @@ fn select_piece(
 }
 
 fn move_piece(
-    commands: &mut Commands,
-    selected_square: ChangedRes<SelectedSquare>,
+    mut commands: Commands,
+    selected_square: Res<SelectedSquare>,
     selected_piece: Res<SelectedPiece>,
     mut turn: ResMut<PlayerTurn>,
     squares_query: Query<&Square>,
     mut pieces_query: Query<(Entity, &mut Piece)>,
-    mut reset_selected_event: ResMut<Events<ResetSelectedEvent>>,
+    mut reset_selected_event: EventWriter<ResetSelectedEvent>,
 ) {
+    if selected_square.is_changed() {
+        return;
+    }
+
     let square_entity = if let Some(entity) = selected_square.entity {
         entity
     } else {
@@ -210,7 +221,7 @@ fn move_piece(
                     && other_piece.color != piece.color
                 {
                     // Mark the piece as taken
-                    commands.insert_one(other_entity, Taken);
+                    commands.entity(other_entity).insert(Taken);
                 }
             }
 
@@ -229,12 +240,11 @@ fn move_piece(
 struct ResetSelectedEvent;
 
 fn reset_selected(
-    mut event_reader: Local<EventReader<ResetSelectedEvent>>,
-    events: Res<Events<ResetSelectedEvent>>,
+    mut event_reader: EventReader<ResetSelectedEvent>,
     mut selected_square: ResMut<SelectedSquare>,
     mut selected_piece: ResMut<SelectedPiece>,
 ) {
-    for _event in event_reader.iter(&events) {
+    for _event in event_reader.iter() {
         selected_square.entity = None;
         selected_piece.entity = None;
     }
@@ -242,8 +252,8 @@ fn reset_selected(
 
 struct Taken;
 fn despawn_taken_pieces(
-    commands: &mut Commands,
-    mut app_exit_events: ResMut<Events<AppExit>>,
+    mut commands: Commands,
+    mut app_exit_events: EventWriter<AppExit>,
     query: Query<(Entity, &Piece, &Taken)>,
 ) {
     for (entity, piece, _taken) in query.iter() {
@@ -260,7 +270,7 @@ fn despawn_taken_pieces(
         }
 
         // Despawn piece and children
-        commands.despawn_recursive(entity);
+        commands.entity(entity).despawn_recursive();
     }
 }
 
