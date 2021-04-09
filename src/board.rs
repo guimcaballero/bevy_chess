@@ -42,14 +42,18 @@ fn create_board(
 }
 
 fn color_squares(
-    pick_state: Res<PickState>,
     selected_square: Res<SelectedSquare>,
     materials: Res<SquareMaterials>,
     mut query: Query<(Entity, &Square, &mut Handle<StandardMaterial>)>,
+    picking_camera_query: Query<&PickingCamera>,
 ) {
     // Get entity under the cursor, if there is one
-    let top_entity = if let Some((entity, _intersection)) = pick_state.top(Group::default()) {
-        Some(*entity)
+    let top_entity = if let Some(picking_camera) = picking_camera_query.iter().last() {
+        if let Some((entity, _intersection)) = picking_camera.intersect_top() {
+            Some(entity)
+        } else {
+            None
+        }
     } else {
         None
     };
@@ -114,11 +118,11 @@ impl PlayerTurn {
 }
 
 fn select_square(
-    pick_state: Res<PickState>,
     mouse_button_inputs: Res<Input<MouseButton>>,
     mut selected_square: ResMut<SelectedSquare>,
     mut selected_piece: ResMut<SelectedPiece>,
     squares_query: Query<&Square>,
+    picking_camera_query: Query<&PickingCamera>,
 ) {
     // Only run if the left button is pressed
     if !mouse_button_inputs.just_pressed(MouseButton::Left) {
@@ -126,16 +130,17 @@ fn select_square(
     }
 
     // Get the square under the cursor and set it as the selected
-    if let Some((square_entity, _intersection)) = pick_state.top(Group::default()) {
-        // Get the actual square. This ensures it exists and is a square. Not really needed
-        if let Ok(_square) = squares_query.get(*square_entity) {
-            // Mark it as selected
-            selected_square.entity = Some(*square_entity);
+    if let Some(picking_camera) = picking_camera_query.iter().last() {
+        if let Some((square_entity, _intersection)) = picking_camera.intersect_top() {
+            if let Ok(_square) = squares_query.get(square_entity) {
+                // Mark it as selected
+                selected_square.entity = Some(square_entity);
+            }
+        } else {
+            // Player clicked outside the board, deselect everything
+            selected_square.entity = None;
+            selected_piece.entity = None;
         }
-    } else {
-        // Player clicked outside the board, deselect everything
-        selected_square.entity = None;
-        selected_piece.entity = None;
     }
 }
 
