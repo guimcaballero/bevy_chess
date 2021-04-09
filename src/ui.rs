@@ -6,7 +6,7 @@ struct NextMoveText;
 
 /// Initialize UiCamera and text
 fn init_next_move_text(
-    commands: &mut Commands,
+    mut commands: Commands,
     asset_server: ResMut<AssetServer>,
     mut color_materials: ResMut<Assets<ColorMaterial>>,
 ) {
@@ -14,9 +14,10 @@ fn init_next_move_text(
     let material = color_materials.add(Color::NONE.into());
 
     commands
-        .spawn(CameraUiBundle::default())
+        .spawn_bundle(UiCameraBundle::default())
         // root node
-        .spawn(NodeBundle {
+        .commands()
+        .spawn_bundle(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
                 position: Rect {
@@ -31,29 +32,29 @@ fn init_next_move_text(
         })
         .with_children(|parent| {
             parent
-                .spawn(TextBundle {
-                    text: Text {
-                        value: "Next move: White".to_string(),
-                        font,
-                        style: TextStyle {
+                .spawn_bundle(TextBundle {
+                    text: Text::with_section(
+                        "Next move: White",
+                        TextStyle {
+                            font: font.clone(),
                             font_size: 40.0,
                             color: Color::rgb(0.8, 0.8, 0.8),
-                            ..Default::default()
                         },
-                    },
+                        Default::default(),
+                    ),
                     ..Default::default()
                 })
-                .with(NextMoveText);
+                .insert(NextMoveText);
         });
 }
 
 /// Update text with the correct turn
-fn next_move_text_update(
-    turn: ChangedRes<PlayerTurn>,
-    mut query: Query<(&mut Text, &NextMoveText)>,
-) {
+fn next_move_text_update(turn: Res<PlayerTurn>, mut query: Query<(&mut Text, &NextMoveText)>) {
+    if !turn.is_changed() {
+        return;
+    }
     for (mut text, _tag) in query.iter_mut() {
-        text.value = format!(
+        text.sections[0].value = format!(
             "Next move: {}",
             match turn.0 {
                 PieceColor::White => "White",
@@ -64,9 +65,9 @@ fn next_move_text_update(
 }
 
 /// Demo system to show off Query transformers
-fn log_text_changes(query: Query<&Text, Mutated<Text>>) {
+fn log_text_changes(query: Query<&Text, Changed<Text>>) {
     for text in query.iter() {
-        println!("New text: {}", text.value);
+        println!("New text: {}", text.sections[0].value);
     }
 }
 
