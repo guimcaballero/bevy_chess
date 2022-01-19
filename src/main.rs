@@ -9,7 +9,7 @@ mod ui;
 use ui::*;
 
 fn main() {
-    App::build()
+    App::new()
         // Set antialiasing to use 4 samples
         .insert_resource(Msaa { samples: 4 })
         // Set WindowDescriptor Resource to change title and size
@@ -42,7 +42,7 @@ fn setup(mut commands: Commands) {
         .insert_bundle(PickingCameraBundle::default())
         // Light
         .commands()
-        .spawn_bundle(LightBundle {
+        .spawn_bundle(PointLightBundle {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
             ..Default::default()
         });

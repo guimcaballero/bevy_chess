@@ -2,16 +2,15 @@ use crate::{board::*, pieces::*};
 use bevy::prelude::*;
 
 // Component to mark the Text entity
+#[derive(Component)]
 struct NextMoveText;
 
 /// Initialize UiCamera and text
 fn init_next_move_text(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
-    mut color_materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let font = asset_server.load("fonts/FiraSans-Bold.ttf");
-    let material = color_materials.add(Color::NONE.into());
 
     commands
         .spawn_bundle(UiCameraBundle::default())
@@ -27,7 +26,7 @@ fn init_next_move_text(
                 },
                 ..Default::default()
             },
-            material,
+            color: Color::NONE.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -73,7 +72,7 @@ fn log_text_changes(query: Query<&Text, Changed<Text>>) {
 
 pub struct UIPlugin;
 impl Plugin for UIPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_startup_system(init_next_move_text.system())
             .add_system(next_move_text_update.system())
             .add_system(log_text_changes.system());
