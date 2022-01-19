@@ -2,6 +2,7 @@ use crate::pieces::*;
 use bevy::{app::AppExit, prelude::*};
 use bevy_mod_picking::*;
 
+#[derive(Component)]
 pub struct Square {
     pub x: u8,
     pub y: u8,
@@ -253,7 +254,9 @@ fn reset_selected(
     }
 }
 
+#[derive(Component)]
 struct Taken;
+
 fn despawn_taken_pieces(
     mut commands: Commands,
     mut app_exit_events: EventWriter<AppExit>,
@@ -279,7 +282,7 @@ fn despawn_taken_pieces(
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.init_resource::<SelectedSquare>()
             .init_resource::<SelectedPiece>()
             .init_resource::<SquareMaterials>()
