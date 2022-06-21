@@ -31,14 +31,12 @@ fn main() {
 fn setup(mut commands: Commands) {
     commands
         // Camera
-        .spawn_bundle({
-              let mut camera = OrthographicCameraBundle::new_3d();
-              camera.orthographic_projection.scale = 5.0;
-              camera.transform = Transform::from_matrix(Mat4::from_rotation_translation(
+        .spawn_bundle(PerspectiveCameraBundle{
+            transform: Transform::from_matrix(Mat4::from_rotation_translation(
                   Quat::from_xyzw(-0.3, -0.5, -0.3, 0.5).normalize(),
-                  Vec3::new(-7.0, 20.0, 4.0),
-              ));
-              camera
+                  Vec3::new(-7.0, 20.0, 4.0))),
+            ..Default::default()
+
         })
         .insert_bundle(PickingCameraBundle::default())
         // Light
