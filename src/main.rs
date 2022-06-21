@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use bevy_mod_picking::*;
 
-// mod pieces;
-// use pieces::*;
+mod pieces;
+use pieces::*;
 // mod board;
 // use board::*;
 // mod ui;
@@ -22,7 +22,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins)
         //.add_plugin(BoardPlugin)
-        //.add_plugin(PiecesPlugin)
+        .add_plugin(PiecesPlugin)
         //.add_plugin(UIPlugin)
         .add_startup_system(setup)
         .run();
