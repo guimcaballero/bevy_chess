@@ -2,6 +2,7 @@ use crate::pieces::*;
 use bevy::{app::AppExit, prelude::*};
 use bevy_mod_picking::*;
 
+#[derive(Component)]
 pub struct Square {
     pub x: u8,
     pub y: u8,
@@ -35,7 +36,14 @@ fn create_board(
                     transform: Transform::from_translation(Vec3::new(i as f32, 0., j as f32)),
                     ..Default::default()
                 })
-                .insert_bundle(PickableBundle::default())
+                .insert_bundle(PickableBundle {
+                    // pickable_button: PickableButton {
+                    //     initial: Some(initial_mat.clone()),
+                    //     hovered: Some(materials.highlight_color.clone()),
+                    //     pressed: None,
+                    //     selected: Some(materials.selected_color.clone())},
+                    ..Default::default()
+                })
                 .insert(Square { x: i, y: j });
         }
     }
@@ -100,6 +108,8 @@ struct SelectedSquare {
 struct SelectedPiece {
     entity: Option<Entity>,
 }
+
+#[derive(Component)]
 pub struct PlayerTurn(pub PieceColor);
 impl Default for PlayerTurn {
     fn default() -> Self {
@@ -253,6 +263,7 @@ fn reset_selected(
     }
 }
 
+#[derive(Component)]
 struct Taken;
 fn despawn_taken_pieces(
     mut commands: Commands,
@@ -279,29 +290,29 @@ fn despawn_taken_pieces(
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.init_resource::<SelectedSquare>()
             .init_resource::<SelectedPiece>()
             .init_resource::<SquareMaterials>()
             .init_resource::<PlayerTurn>()
             .add_event::<ResetSelectedEvent>()
-            .add_startup_system(create_board.system())
-            .add_system(color_squares.system())
-            .add_system(select_square.system().label("select_square"))
+            .add_startup_system(create_board)
+            .add_system(color_squares)
+            .add_system(select_square.label("select_square"))
             .add_system(
                 // move_piece needs to run before select_piece
                 move_piece
-                    .system()
+
                     .after("select_square")
                     .before("select_piece"),
             )
             .add_system(
                 select_piece
-                    .system()
+
                     .after("select_square")
                     .label("select_piece"),
             )
-            .add_system(despawn_taken_pieces.system())
-            .add_system(reset_selected.system().after("select_square"));
+            .add_system(despawn_taken_pieces)
+            .add_system(reset_selected.after("select_square"));
     }
 }
