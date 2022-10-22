@@ -16,7 +16,7 @@ pub enum PieceType {
     Pawn,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Component)]
 pub struct Piece {
     pub color: PieceColor,
     pub piece_type: PieceType,
@@ -621,8 +621,8 @@ fn spawn_pawn(
 
 pub struct PiecesPlugin;
 impl Plugin for PiecesPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(create_pieces.system())
-            .add_system(move_pieces.system());
+    fn build(&self, app: &mut App) {
+        app.add_startup_system(create_pieces)
+            .add_system(move_pieces);
     }
 }

@@ -2,6 +2,7 @@ use crate::pieces::*;
 use bevy::{app::AppExit, prelude::*};
 use bevy_mod_picking::*;
 
+#[derive(Component)]
 pub struct Square {
     pub x: u8,
     pub y: u8,
@@ -253,6 +254,7 @@ fn reset_selected(
     }
 }
 
+#[derive(Component)]
 struct Taken;
 fn despawn_taken_pieces(
     mut commands: Commands,
@@ -279,29 +281,27 @@ fn despawn_taken_pieces(
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.init_resource::<SelectedSquare>()
             .init_resource::<SelectedPiece>()
             .init_resource::<SquareMaterials>()
             .init_resource::<PlayerTurn>()
             .add_event::<ResetSelectedEvent>()
-            .add_startup_system(create_board.system())
-            .add_system(color_squares.system())
-            .add_system(select_square.system().label("select_square"))
+            .add_startup_system(create_board)
+            .add_system(color_squares)
+            .add_system(select_square.label("select_square"))
             .add_system(
                 // move_piece needs to run before select_piece
                 move_piece
-                    .system()
                     .after("select_square")
                     .before("select_piece"),
             )
             .add_system(
                 select_piece
-                    .system()
                     .after("select_square")
                     .label("select_piece"),
             )
-            .add_system(despawn_taken_pieces.system())
-            .add_system(reset_selected.system().after("select_square"));
+            .add_system(despawn_taken_pieces)
+            .add_system(reset_selected.after("select_square"));
     }
 }
