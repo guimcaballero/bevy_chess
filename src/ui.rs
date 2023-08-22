@@ -15,21 +15,18 @@ fn init_next_move_text(
     commands
         //.spawn_bundle(UiCameraBundle::default())
         // root node
-        .spawn_bundle(NodeBundle {
+        .spawn(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect {
-                    left: Val::Px(10.),
-                    top: Val::Px(10.),
-                    ..Default::default()
-                },
+                left: Val::Px(10.),
+                top: Val::Px(10.),
                 ..Default::default()
             },
             ..Default::default()
         })
         .with_children(|parent| {
             parent
-                .spawn_bundle(TextBundle {
+                .spawn(TextBundle {
                     text: Text::from_section(
                         "Next move: White",
                         TextStyle {
@@ -70,8 +67,8 @@ fn log_text_changes(query: Query<&Text, Changed<Text>>) {
 pub struct UIPlugin;
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(init_next_move_text)
-            .add_system(next_move_text_update)
-            .add_system(log_text_changes);
+        app.add_systems(Startup, init_next_move_text)
+            .add_systems(Update, next_move_text_update)
+            .add_systems(Update, log_text_changes);
     }
 }

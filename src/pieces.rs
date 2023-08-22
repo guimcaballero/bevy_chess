@@ -383,7 +383,7 @@ fn spawn_king(
 ) {
     commands
         // Spawn parent entity
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             transform: Transform::from_translation(Vec3::new(
                 position.0 as f32,
                 0.,
@@ -399,22 +399,22 @@ fn spawn_king(
         })
         // Add children to the parent
         .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
+            parent.spawn(PbrBundle {
                 mesh,
                 material: material.clone(),
                 transform: {
                     let mut transform = Transform::from_translation(Vec3::new(-0.2, 0., -1.9));
-                    transform.apply_non_uniform_scale(Vec3::new(0.2, 0.2, 0.2));
+                    transform.scale *= Vec3::new(0.2, 0.2, 0.2);
                     transform
                 },
                 ..Default::default()
             });
-            parent.spawn_bundle(PbrBundle {
+            parent.spawn(PbrBundle {
                 mesh: mesh_cross,
                 material,
                 transform: {
                     let mut transform = Transform::from_translation(Vec3::new(-0.2, 0., -1.9));
-                    transform.apply_non_uniform_scale(Vec3::new(0.2, 0.2, 0.2));
+                    transform.scale *= Vec3::new(0.2, 0.2, 0.2);
                     transform
                 },
                 ..Default::default()
@@ -432,7 +432,7 @@ fn spawn_knight(
 ) {
     commands
         // Spawn parent entity
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             transform: Transform::from_translation(Vec3::new(
                 position.0 as f32,
                 0.,
@@ -448,22 +448,22 @@ fn spawn_knight(
         })
         // Add children to the parent
         .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
+            parent.spawn(PbrBundle {
                 mesh: mesh_1,
                 material: material.clone(),
                 transform: {
                     let mut transform = Transform::from_translation(Vec3::new(-0.2, 0., 0.9));
-                    transform.apply_non_uniform_scale(Vec3::new(0.2, 0.2, 0.2));
+                    transform.scale *= Vec3::new(0.2, 0.2, 0.2);
                     transform
                 },
                 ..Default::default()
             });
-            parent.spawn_bundle(PbrBundle {
+            parent.spawn(PbrBundle {
                 mesh: mesh_2,
                 material,
                 transform: {
                     let mut transform = Transform::from_translation(Vec3::new(-0.2, 0., 0.9));
-                    transform.apply_non_uniform_scale(Vec3::new(0.2, 0.2, 0.2));
+                    transform.scale *= Vec3::new(0.2, 0.2, 0.2);
                     transform
                 },
                 ..Default::default()
@@ -480,7 +480,7 @@ fn spawn_queen(
 ) {
     commands
         // Spawn parent entity
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             transform: Transform::from_translation(Vec3::new(
                 position.0 as f32,
                 0.,
@@ -495,12 +495,12 @@ fn spawn_queen(
             y: position.1,
         })
         .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
+            parent.spawn(PbrBundle {
                 mesh,
                 material,
                 transform: {
                     let mut transform = Transform::from_translation(Vec3::new(-0.2, 0., -0.95));
-                    transform.apply_non_uniform_scale(Vec3::new(0.2, 0.2, 0.2));
+                    transform.scale *= Vec3::new(0.2, 0.2, 0.2);
                     transform
                 },
                 ..Default::default()
@@ -517,7 +517,7 @@ fn spawn_bishop(
 ) {
     commands
         // Spawn parent entity
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             transform: Transform::from_translation(Vec3::new(
                 position.0 as f32,
                 0.,
@@ -532,12 +532,12 @@ fn spawn_bishop(
             y: position.1,
         })
         .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
+            parent.spawn(PbrBundle {
                 mesh,
                 material,
                 transform: {
                     let mut transform = Transform::from_translation(Vec3::new(-0.1, 0., 0.));
-                    transform.apply_non_uniform_scale(Vec3::new(0.2, 0.2, 0.2));
+                    transform.scale *= Vec3::new(0.2, 0.2, 0.2);
                     transform
                 },
                 ..Default::default()
@@ -554,7 +554,7 @@ fn spawn_rook(
 ) {
     commands
         // Spawn parent entity
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             transform: Transform::from_translation(Vec3::new(
                 position.0 as f32,
                 0.,
@@ -569,12 +569,12 @@ fn spawn_rook(
             y: position.1,
         })
         .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
+            parent.spawn(PbrBundle {
                 mesh,
                 material,
                 transform: {
                     let mut transform = Transform::from_translation(Vec3::new(-0.1, 0., 1.8));
-                    transform.apply_non_uniform_scale(Vec3::new(0.2, 0.2, 0.2));
+                    transform.scale *= Vec3::new(0.2, 0.2, 0.2);
                     transform
                 },
                 ..Default::default()
@@ -591,7 +591,7 @@ fn spawn_pawn(
 ) {
     commands
         // Spawn parent entity
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             transform: Transform::from_translation(Vec3::new(
                 position.0 as f32,
                 0.,
@@ -606,12 +606,12 @@ fn spawn_pawn(
             y: position.1,
         })
         .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
+            parent.spawn(PbrBundle {
                 mesh,
                 material,
                 transform: {
                     let mut transform = Transform::from_translation(Vec3::new(-0.2, 0., 2.6));
-                    transform.apply_non_uniform_scale(Vec3::new(0.2, 0.2, 0.2));
+                    transform.scale *= Vec3::new(0.2, 0.2, 0.2);
                     transform
                 },
                 ..Default::default()
@@ -622,7 +622,7 @@ fn spawn_pawn(
 pub struct PiecesPlugin;
 impl Plugin for PiecesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(create_pieces)
-            .add_system(move_pieces);
+        app.add_systems(Startup, create_pieces)
+            .add_systems(Update, move_pieces);
     }
 }
