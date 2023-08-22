@@ -1,7 +1,8 @@
 use crate::pieces::*;
 use bevy::{app::AppExit, prelude::*};
-use bevy_mod_picking::*;
+use bevy_mod_picking::prelude::*;
 
+#[derive(Component)]
 pub struct Square {
     pub x: u8,
     pub y: u8,
@@ -18,16 +19,16 @@ fn create_board(
     materials: Res<SquareMaterials>,
 ) {
     // Add meshes
-    let mesh = meshes.add(Mesh::from(shape::Plane { size: 1. }));
+    let mesh = meshes.add(Mesh::from(shape::Plane::from_size(1.)));
 
     // Spawn 64 squares
     for i in 0..8 {
         for j in 0..8 {
             commands
-                .spawn_bundle(PbrBundle {
+                .spawn(PbrBundle {
                     mesh: mesh.clone(),
                     // Change material according to position to get alternating pattern
-                    material: if (i + j + 1) % 2 == 0 {
+                    material: if (Square { x: i, y: j }.is_white()) {
                         materials.white_color.clone()
                     } else {
                         materials.black_color.clone()
@@ -35,41 +36,20 @@ fn create_board(
                     transform: Transform::from_translation(Vec3::new(i as f32, 0., j as f32)),
                     ..Default::default()
                 })
-                .insert_bundle(PickableBundle::default())
+                .insert(PickableBundle::default())
+                .insert(RaycastPickTarget::default()) // To mark the entity as pickable for bevy_picking_raycast crate
+                .insert(Highlight {
+                    hovered: Some(HighlightKind::Fixed(materials.highlight_color.clone())),
+                    pressed: Some(HighlightKind::Fixed(materials.highlight_color.clone())), // Unintuitive, but leaving as "None" will give mod_picking's default green colour
+                    selected: Some(HighlightKind::Fixed(materials.selected_color.clone())),
+                })
                 .insert(Square { x: i, y: j });
         }
     }
 }
 
-fn color_squares(
-    selected_square: Res<SelectedSquare>,
-    materials: Res<SquareMaterials>,
-    mut query: Query<(Entity, &Square, &mut Handle<StandardMaterial>)>,
-    picking_camera_query: Query<&PickingCamera>,
-) {
-    // Get entity under the cursor, if there is one
-    let top_entity = match picking_camera_query.iter().last() {
-        Some(picking_camera) => match picking_camera.intersect_top() {
-            Some((entity, _intersection)) => Some(entity),
-            None => None,
-        },
-        None => None,
-    };
 
-    for (entity, square, mut material) in query.iter_mut() {
-        // Change the material
-        *material = if Some(entity) == top_entity {
-            materials.highlight_color.clone()
-        } else if Some(entity) == selected_square.entity {
-            materials.selected_color.clone()
-        } else if square.is_white() {
-            materials.white_color.clone()
-        } else {
-            materials.black_color.clone()
-        };
-    }
-}
-
+#[derive(Resource)]
 struct SquareMaterials {
     highlight_color: Handle<StandardMaterial>,
     selected_color: Handle<StandardMaterial>,
@@ -92,14 +72,15 @@ impl FromWorld for SquareMaterials {
     }
 }
 
-#[derive(Default)]
+#[derive(Resource, Default)]
 struct SelectedSquare {
     entity: Option<Entity>,
 }
-#[derive(Default)]
+#[derive(Resource, Default)]
 struct SelectedPiece {
     entity: Option<Entity>,
 }
+#[derive(Resource)]
 pub struct PlayerTurn(pub PieceColor);
 impl Default for PlayerTurn {
     fn default() -> Self {
@@ -115,30 +96,22 @@ impl PlayerTurn {
     }
 }
 
+/// Update entity selection component state from pointer selection events.
 fn select_square(
-    mouse_button_inputs: Res<Input<MouseButton>>,
     mut selected_square: ResMut<SelectedSquare>,
-    mut selected_piece: ResMut<SelectedPiece>,
-    squares_query: Query<&Square>,
-    picking_camera_query: Query<&PickingCamera>,
+    mut deselections: EventReader<Pointer<Deselect>>,
+    mut selections: EventReader<Pointer<Select>>,
 ) {
-    // Only run if the left button is pressed
-    if !mouse_button_inputs.just_pressed(MouseButton::Left) {
-        return;
-    }
-
-    // Get the square under the cursor and set it as the selected
-    if let Some(picking_camera) = picking_camera_query.iter().last() {
-        if let Some((square_entity, _intersection)) = picking_camera.intersect_top() {
-            if let Ok(_square) = squares_query.get(square_entity) {
-                // Mark it as selected
-                selected_square.entity = Some(square_entity);
-            }
-        } else {
-            // Player clicked outside the board, deselect everything
-            selected_square.entity = None;
-            selected_piece.entity = None;
+    // Handle delection events first
+    for deselection in deselections.iter() {
+        if selected_square.as_ref().entity == Some(deselection.target) {
+            // Only actually mutate selected_square iff the previously selected square was deselected
+            selected_square.as_mut().entity = None;
         }
+    }
+    // Then handle the new selection
+    for selection in selections.iter() {
+        selected_square.as_mut().entity = Some(selection.target);
     }
 }
 
@@ -240,19 +213,28 @@ fn move_piece(
     }
 }
 
+#[derive(Event)]
 struct ResetSelectedEvent;
 
 fn reset_selected(
     mut event_reader: EventReader<ResetSelectedEvent>,
     mut selected_square: ResMut<SelectedSquare>,
     mut selected_piece: ResMut<SelectedPiece>,
+    mut selectables: Query<&mut PickSelection>,
 ) {
     for _event in event_reader.iter() {
+        // Reset mod_picking's tracking of old selection. Odd that there's no easier way to do this.
+        if let Some(old_selection) = selected_square.entity {
+            if let Ok(mut old_pick) = selectables.get_mut(old_selection) {
+                old_pick.is_selected = false;
+            }
+        }
         selected_square.entity = None;
         selected_piece.entity = None;
     }
 }
 
+#[derive(Component)]
 struct Taken;
 fn despawn_taken_pieces(
     mut commands: Commands,
@@ -279,29 +261,14 @@ fn despawn_taken_pieces(
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.init_resource::<SelectedSquare>()
             .init_resource::<SelectedPiece>()
             .init_resource::<SquareMaterials>()
             .init_resource::<PlayerTurn>()
             .add_event::<ResetSelectedEvent>()
-            .add_startup_system(create_board.system())
-            .add_system(color_squares.system())
-            .add_system(select_square.system().label("select_square"))
-            .add_system(
-                // move_piece needs to run before select_piece
-                move_piece
-                    .system()
-                    .after("select_square")
-                    .before("select_piece"),
-            )
-            .add_system(
-                select_piece
-                    .system()
-                    .after("select_square")
-                    .label("select_piece"),
-            )
-            .add_system(despawn_taken_pieces.system())
-            .add_system(reset_selected.system().after("select_square"));
-    }
+            .add_systems(Startup, create_board)
+            .add_systems(Update, (select_square, move_piece, despawn_taken_pieces, select_piece).chain())
+            .add_systems(Update, reset_selected);
+        }
 }

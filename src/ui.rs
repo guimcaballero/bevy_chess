@@ -2,45 +2,38 @@ use crate::{board::*, pieces::*};
 use bevy::prelude::*;
 
 // Component to mark the Text entity
+#[derive(Component)]
 struct NextMoveText;
 
 /// Initialize UiCamera and text
 fn init_next_move_text(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
-    mut color_materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let font = asset_server.load("fonts/FiraSans-Bold.ttf");
-    let material = color_materials.add(Color::NONE.into());
 
     commands
-        .spawn_bundle(UiCameraBundle::default())
+        //.spawn_bundle(UiCameraBundle::default())
         // root node
-        .commands()
-        .spawn_bundle(NodeBundle {
+        .spawn(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: Rect {
-                    left: Val::Px(10.),
-                    top: Val::Px(10.),
-                    ..Default::default()
-                },
+                left: Val::Px(10.),
+                top: Val::Px(10.),
                 ..Default::default()
             },
-            material,
             ..Default::default()
         })
         .with_children(|parent| {
             parent
-                .spawn_bundle(TextBundle {
-                    text: Text::with_section(
+                .spawn(TextBundle {
+                    text: Text::from_section(
                         "Next move: White",
                         TextStyle {
                             font: font.clone(),
                             font_size: 40.0,
                             color: Color::rgb(0.8, 0.8, 0.8),
                         },
-                        Default::default(),
                     ),
                     ..Default::default()
                 })
@@ -73,9 +66,9 @@ fn log_text_changes(query: Query<&Text, Changed<Text>>) {
 
 pub struct UIPlugin;
 impl Plugin for UIPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(init_next_move_text.system())
-            .add_system(next_move_text_update.system())
-            .add_system(log_text_changes.system());
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, init_next_move_text)
+            .add_systems(Update, next_move_text_update)
+            .add_systems(Update, log_text_changes);
     }
 }
